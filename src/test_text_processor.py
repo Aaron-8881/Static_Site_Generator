@@ -1,6 +1,6 @@
 import unittest
 from textnode import TextNode, TextType
-from text_processor import split_nodes_delimiter, split_nodes_image, split_nodes_link
+from text_processor import split_nodes_delimiter, split_nodes_image, split_nodes_link, text_to_textnodes
 
 class TestTextProcessor(unittest.TestCase):
     def test_split_delimiter_code_single(self):
@@ -297,3 +297,67 @@ class TestTextProcessor(unittest.TestCase):
             new_nodes,
         )
 
+    def test_text_to_textnodes_mixed(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.NORMAL),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.NORMAL),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.NORMAL),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.NORMAL),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_only_bold(self):
+        text = "This is **bold** text"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.NORMAL),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" text", TextType.NORMAL),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_only_image(self):
+        text = "![image](https://i.imgur.com/zjjcJKZ.png)"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_plain_text(self):
+        text = "Plain text"
+        nodes = text_to_textnodes(text)
+        expected = [TextNode("Plain text", TextType.NORMAL)]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_empty(self):
+        text = ""
+        nodes = text_to_textnodes(text)
+        expected = [TextNode("", TextType.NORMAL)]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_multiple_types(self):
+        text = "**bold** _italic_ `code`"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("bold", TextType.BOLD),
+            TextNode(" ", TextType.NORMAL),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" ", TextType.NORMAL),
+            TextNode("code", TextType.CODE),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_invalid_delimiter(self):
+        text = "This is `code text"
+        with self.assertRaises(ValueError) as context:
+            text_to_textnodes(text)
+        self.assertEqual(str(context.exception), "Invalid Markdown syntax: missing closing delimiter '`'")
