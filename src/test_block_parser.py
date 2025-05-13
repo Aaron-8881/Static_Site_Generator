@@ -1,5 +1,5 @@
 import unittest
-from block_parser import BlockType, block_to_block_type
+from block_parser import BlockType, block_to_block_type, markdown_to_blocks
 
 class TestBlockParser(unittest.TestCase):
     def test_heading_single(self):
@@ -85,6 +85,63 @@ class TestBlockParser(unittest.TestCase):
     def test_mixed_content(self):
         text = "Paragraph with # heading-like text"
         self.assertEqual(block_to_block_type(text), BlockType.PARAGRAPH)
+
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_markdown_to_blocks_single_block(self):
+        md = "This is a single paragraph"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["This is a single paragraph"])
+
+    def test_markdown_to_blocks_empty(self):
+        md = ""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, [])
+
+    def test_markdown_to_blocks_multiple_newlines(self):
+        md = "First block\n\n\n\nSecond block"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["First block", "Second block"])
+
+    def test_markdown_to_blocks_leading_trailing_newlines(self):
+        md = "\n\nBlock 1\n\nBlock 2\n\n"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["Block 1", "Block 2"])
+
+    def test_markdown_to_blocks_code_block(self):
+        md = "```\ncode here\n```\n\n# Heading"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["```\ncode here\n```", "# Heading"])
+
+    def test_markdown_to_blocks_multi_line_blocks(self):
+        md = "# Heading\n\n> Quote line 1\n> Quote line 2\n\n1. Item 1\n2. Item 2"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "# Heading",
+                "> Quote line 1\n> Quote line 2",
+                "1. Item 1\n2. Item 2",
+            ],
+        )
 
 if __name__ == "__main__":
     unittest.main()

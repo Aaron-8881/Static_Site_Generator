@@ -43,3 +43,9 @@ def block_to_block_type(text):
     
     # Default to paragraph
     return BlockType.PARAGRAPH
+
+def markdown_to_blocks(markdown):
+    # Split on double newlines and strip each block
+    blocks = [block.strip() for block in markdown.split("\n\n")]
+    # Filter out empty blocks
+    return [block for block in blocks if block]
